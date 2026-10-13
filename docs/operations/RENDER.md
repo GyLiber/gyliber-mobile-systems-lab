@@ -1,11 +1,22 @@
-# Render deployment preparation
+# Production prototype — Render + Neon
 
-`render.yaml` supplies a free Docker web service but does not create database credentials or select a Render account workspace.
+**Web:** https://gyliber-mobile-systems-lab.onrender.com · Render workspace: My Workspace · Render service: `gyliber-mobile-systems-lab` · plan: **free**, region: **Oregon**.
+**Database:** Neon Free PostgreSQL project `gyliber-mobile-systems-lab`, database `gmsl`, isolated from the existing Command Center database.
 
-Before deployment, the owner must select the intended Render workspace, provision/select one PostgreSQL database, and supply `DATABASE_URL` and an independently generated `LAB_OWNER_TOKEN` as secrets. Do not paste tokens into public discussion. Use HTTPS. The application runs migrations at startup; perform an independent JSON export before replacing a previous deployment.
+Set `DATABASE_URL` to Neon Postgres with SSL and `LAB_OWNER_TOKEN` to high-entropy random secret via Render's private environment settings. Never commit, log or share these values. Rotating the token invalidates the old bearer credential. Keep GitHub and hosting MFA enabled.
 
-**Free plan limitations:** Render free PostgreSQL has a 30-day expiry and does not provide managed backups. Free web services can sleep and have ephemeral local storage. Do not treat free hosting as durable evidence storage. Export JSON to an independent private location and rehearse restoration before depending on the service.
+App startup connects to PostgreSQL then runs SQLx migrations, *before* binding port. Render marked initial deployment live on 2026-10-13, with app listening on port 10000. Automatic deployments from `main` are enabled. The `/health` endpoint is unauthenticated and exposes only status/version.
 
-## Post-deploy smoke
+## Owner production smoke — outstanding
+1. Open the app over HTTPS; enter owner token, click **Load overview**, confirm no error.
+2. Register synthetic device `Test / Demo-001`; save the displayed UUID.
+3. Create research, experiment and artefact metadata bound to that UUID. Use a **synthetic** SHA-256 hex value only for the demo.
+4. Move the experiment from proposed to blocked; reload, confirm lists and overview match persisted records; download JSON export.
+5. Request `/api/v1/overview` without credentials and confirm HTTP 401. Record date and outcomes in the release issue.
+Do not publish the bearer token, real device identifiers or exported JSON in public GitHub issues.
 
-Verify `GET /health` returns `status=ok`, unauthenticated `GET /api/v1/overview` returns HTTP 401, and the authenticated browser can create a synthetic device, research entry, experiment, artefact metadata, update experiment status, list records and export JSON. Do not tag the release before this check passes.
+## Data preservation
+Neon free-tier data retention, quotas and suspension constraints should be checked on the owner's account. The web instance has ephemeral local storage; PostgreSQL is the data store. The export endpoint is not a complete backup and no re-import or tested database restore exists yet. Keep a separate private copy of exports and plan disaster recovery before real research.
+
+## Troubleshooting and rollback
+Check Render service events/deploy logs and Neon service status. Startup failures from bad connection string, SSL or migrations require inspecting protected logs without divulging passwords. Avoid destructive migrations. Re-deploy the previous known-good commit in Render after a bad code change, while preserving and independently backing up data. The free-plan service may sleep; cold starts are not guaranteed instantaneous.

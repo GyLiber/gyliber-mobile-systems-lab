@@ -1,33 +1,30 @@
-# v0.1.0 — initial vertical slice (release candidate)
+# v0.1.0 — Initial deployed vertical slice
 
-## Implemented
-Rust/Axum server, PostgreSQL migrations, owner-token-gated JSON API, dark responsive single-page UI, device profiles, research creation/listing, experiment proposals/listing/status updates, artefact metadata creation/listing, dashboard counts, JSON metadata export, container packaging and CI definition.
+**Release date:** 13 October 2026. **Status:** initial hosted prototype, known limitations. **Production:** https://gyliber-mobile-systems-lab.onrender.com
 
-## Run locally
-1. Install Rust, Cargo and PostgreSQL. Create an empty gmsl database.
-2. Set DATABASE_URL and LAB_OWNER_TOKEN from .env.example (do not commit credentials). Use a cryptographically random token at least 32 characters.
-3. Run `cargo test`, `cargo fmt --all -- --check`, `cargo clippy --all-targets -- -D warnings`, then `cargo run`.
-4. Open http://localhost:3000 and enter the owner token. Register a device, then use its UUID for linked records. Export the dataset with the UI.
+## Delivered
+- Rust/Axum API and SQLx PostgreSQL schema migrations, deployed as non-root Docker image.
+- Dark responsive owner-facing UI; create/list device profile, research, experiments and artefact metadata.
+- Experiment statuses `proposed`, `in_progress`, `blocked`; no fabricated verification of procedures.
+- Database-backed overview counters; metadata JSON export; SHA-256 metadata field validation.
+- Single-owner bearer-token gate on protected API routes (temporary prototype mechanism).
+- CI with Rust formatting, strict Clippy, unit tests, release build and PostgreSQL-backed full create/list/status/export smoke flow, including unauthorized rejection.
+- `Cargo.lock` for locked dependency resolution, security/runbook documentation and free-host deployment configuration.
 
-## Safety and constraints
-- Token auth is a temporary single-owner bootstrap, NOT the PDD's preferred GitHub OAuth. Share neither the token nor screenshots containing it.
-- No public registration, device commands, flashing, firmware storage, or actual checksum verification.
-- Experiment workflow supports proposed/in-progress/blocked; claiming a verified result is deliberately blocked until supporting evidence can be recorded. Structured runs and measurement records remain pending.
-- Research, experiment and artefact listings appear in the UI; collections are currently bounded to the latest 100 entries without pagination.
-- No data import or automated restore. Do not treat this as the only source of important research.
-- The metadata export includes operational text and potentially sensitive entries; safeguard it.
-- Render free PostgreSQL expires after 30 days and provides no managed backup; exporting is mandatory.
-- No deployment, post-deployment smoke test or CI pass is claimed by this document.
-- Release must not be tagged until CI builds and tests succeed and the owner confirms live, authenticated persistence and export.
-- A simple bearer secret entered in a web page is not appropriate for high-sensitivity research; this build is limited to synthetic or non-sensitive research until OAuth/session security is implemented.
+## Verification record
+- PR #1 merged into main as `090871e19341fb43584a9593972690db78de92f9`; last PR head `4b1749049f10da19e9561f8287d2fbc0c65ef336` passed two CI workflow runs, including PostgreSQL-backed E2E.
+- Render Docker deployment of merge commit reported **live** on 2026-10-13; logs include `GMSL listening on 10000` and Render's live announcement.
+- Neon free database `gmsl` created by owner. Successful server startup implies its configured PostgreSQL connection and startup migrations completed.
+- **Not verified:** production authenticated user flow (owner has not confirmed after browser testing); independent production HTTP smoke was not available from the previous validation environment. Do not represent these as passed.
+- Release publication is a **source/hosting milestone**, not production security certification or acceptance of sensitive real-device research.
 
-## Next development units
-1. Fix all compiler, lint, security and database integration findings observed in CI.
-2. Expand PostgreSQL integration tests for invalid inputs, foreign keys, experiment state transitions and export.
-3. Implement GitHub OAuth owner allowlist, HttpOnly sessions, CSRF controls and audit events.
-4. Implement record editing/listing and experiment status transitions.
-5. Add versioned OpenAPI specification, rate limiting, CSP and deployment smoke automation.
-6. Prove backup/restore, then consider the v0.2.0 research-structure release.
+## Explicit exclusions and risk
+Bearer-token authentication is a limited interim design, not GitHub OAuth; no per-user audit trail, CSRF/session protection, rate limiting, full input threat audit or external restore procedure. Data export is not automated backup. Free infrastructure can sleep, impose quotas or change. Do not store private or safety-critical research as the only copy.
 
-## Release gate
-CI green; PostgreSQL migrations tested on fresh DB; unauthorized requests rejected; connected browser flow verified; real deploy tested; owner approval; then tag v0.1.0 and publish release notes.
+No device flashing, remote command execution, modem modifications, firmware binary uploads, genuine SHA-256 content verification, verified recovery, or benchmarking. Listings have 100-record cap and no pagination. The application cannot represent an experiment as `verified` until future evidence-linked verification workflows are implemented.
+
+## Reproduce
+With Rust and PostgreSQL: `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`, `cargo build --locked --release`. Set `DATABASE_URL` and `LAB_OWNER_TOKEN` via private environment configuration; run `cargo run --locked`. See README and [operations](operations/RENDER.md).
+
+## Next actions
+See [NEXT-ACTIONS.md](NEXT-ACTIONS.md) for prioritized release follow-up and v0.2.0 scope.

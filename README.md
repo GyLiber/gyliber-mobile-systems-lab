@@ -1,37 +1,20 @@
 # GyLiber Mobile Systems Lab
 
-A focused, evidence-driven laboratory for studying and improving a legacy Android Go device. **The phone's exact model and properties are not assumed.**
+Evidence-driven laboratory for studying legacy mobile systems, beginning with an Android Go device whose exact properties remain unknown until documented.
 
-## Current status
+**Initial hosted release:** v0.1.0 · [Live prototype](https://gyliber-mobile-systems-lab.onrender.com) · [Release notes](docs/RELEASE-0.1.0.md) · [Next actions](docs/NEXT-ACTIONS.md).
 
-Development version **0.1.0 release candidate**, not yet a validated hosted release.
+The Rust/Axum application stores device profiles, research entries, proposed/blocked/in-progress experiments, artefact metadata, dashboard counts and JSON export in PostgreSQL. It neither flashes devices nor executes shell commands.
 
-The Rust/Axum + PostgreSQL application supports device profiles, research entries, experiment proposals and status tracking, SHA-256 artefact metadata, authenticated overview and JSON export. It does **not** flash devices or run shell commands.
+## Local development
+Install Rust, Cargo and PostgreSQL. Create database `gmsl`, set `DATABASE_URL` and a randomly generated `LAB_OWNER_TOKEN` of at least 32 characters. Run `cargo test --locked && cargo run --locked`; open http://localhost:3000.
 
-## Getting started
+API routes under `/api/v1`: `GET/POST /devices`, `GET/POST /research`, `GET/POST /experiments`, `PATCH /experiments/{id}/status`, `GET/POST /artifacts`, `GET /overview`, `GET /export`. The authorization header is `Authorization: Bearer <owner-token>`; `GET /health` is public. Ordinary listings return up to 100 newest records.
 
-Requires Rust/Cargo and PostgreSQL. Create an empty `gmsl` database and provide:
+## Deployment and limits
+Render free Docker web service, with external Neon free PostgreSQL database `gmsl`. Render reported its initial deployment live on 13 October 2026. The deployed host is in Oregon; services can sleep on the free tier. The owner has not reported completing the authenticated browser smoke flow, so **production authenticated end-to-end behavior is not independently verified**. See [operations](docs/operations/RENDER.md).
 
-- `DATABASE_URL`: PostgreSQL connection URL
-- `LAB_OWNER_TOKEN`: randomly generated secret of at least 32 characters
-- `PORT`: optional (default 3000)
+Use only synthetic or non-sensitive data until proper OAuth identity, secure cookies, CSRF defense, rate limiting, production checks and backup/restore verification are delivered. The owner token is held only in browser memory, but bearer-token access is a temporary bootstrap and is not a complete security design. Never commit credentials, identifying device logs, private vulnerability findings or proprietary binaries. Protect exports independently.
 
-Run `cargo test && cargo run`, then open http://localhost:3000. The token stays in the page's volatile memory, not localStorage. See [release candidate notes](docs/RELEASE-0.1.0.md) for limitations, tests and release gate.
-
-The API is under `/api/v1`: `GET/POST /devices`, `GET/POST /research`, `GET/POST /experiments`, `PATCH /experiments/{id}/status`, `GET/POST /artifacts`, `GET /overview`, `GET /export`. Collections return the most recent 100 entries; full metadata export is separate. Protected calls require `Authorization: Bearer <LAB_OWNER_TOKEN>`. `GET /health` is public.
-
-## Security and durability
-
-Only use non-sensitive or synthetic records until the planned identity and hardening release. The current bootstrap token is not equivalent to OAuth. Never commit credentials, device identifiers, private logs or proprietary firmware. PostgreSQL holds metadata; export JSON regularly and protect exported files. Hosted deployment has not been verified.
-
-## Architecture and deployment
-
-Single Rust HTTP application, one PostgreSQL database, SQL migrations, one embedded static web page. Docker packaging and Render Blueprint are provided, requiring the owner to configure external secrets and database access. Review [release notes](docs/RELEASE-0.1.0.md) before deploying. This is a prototype, not a production security guarantee.
-
-## Licensing and contributions
-
-No open-source license has yet been granted. All rights reserved pending the product owner's explicit license selection. Changes should arrive through reviewed pull requests. Report security issues privately to the repository owner, not in public issues.
-
-## AI assistance
-
-AI tools contributed to design and implementation. GyLiber remains responsible for code review, validation, licensing, deployment decisions and security acceptance.
+## Project governance
+No open-source licence is granted; all rights reserved pending a deliberate licence decision. Changes via reviewed pull requests and CI. Report security issues privately to the repository owner. AI tools assisted design and implementation; GyLiber contributors remain responsible for correctness, testing, security, licensing and deployment decisions.

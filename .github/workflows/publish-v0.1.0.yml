@@ -1,0 +1,66 @@
+name: Publish first release
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/RELEASE-0.1.0.md"
+      - "CHANGELOG.md"
+permissions:
+  contents: read
+jobs:
+  release:
+    if: github.repository == 'GyLiber/gyliber-mobile-systems-lab'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lab
+          POSTGRES_PASSWORD: synthetic_ci_only
+          POSTGRES_DB: gmsl_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U lab -d gmsl_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://lab:synthetic_ci_only@localhost:5432/gmsl_ci
+      LAB_OWNER_TOKEN: synthetic-ci-token-with-at-least-32-characters
+      PORT: "3030"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: cargo build --locked --release
+      - name: Smoke test from packaged binary and database
+        shell: bash
+        run: |
+          set -euo pipefail
+          target/release/gyliber-mobile-systems-lab >/tmp/gmsl-release.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3030/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3030/health | jq -e '.status=="ok"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3030/api/v1/overview)" = 401
+      - name: Verify public service health
+        run: |
+          curl -fsS --retry 7 --retry-delay 10 --retry-all-errors --max-time 30 https://gyliber-mobile-systems-lab.onrender.com/health | jq -e '.status=="ok"'
+      - name: Publish v0.1.0 once
+        run: |
+          set -euo pipefail
+          if gh release view v0.1.0 >/dev/null 2>&1; then
+            echo "v0.1.0 already published; no duplicate release"
+            exit 0
+          fi
+          gh release create v0.1.0 --target "$GITHUB_SHA" --title "v0.1.0 — Initial hosted Mobile Systems Lab" --notes-file docs/RELEASE-0.1.0.md
