@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::Html,
     routing::{get, post},
@@ -35,6 +35,8 @@ struct ExperimentInput {
     title: String,
     hypothesis: String,
 }
+#[derive(Deserialize)]
+struct StatusInput { status: String }
 #[derive(Deserialize)]
 struct ArtifactInput {
     device_id: Uuid,
@@ -188,6 +190,45 @@ async fn artifacts_post(
         Err(e) => Err(server_error(e)),
     }
 }
+
+async fn research_get(State(s): State<AppState>, h: HeaderMap) -> ApiResult {
+    authorized(&h, &s)?;
+    let rows = sqlx::query("SELECT row_to_json(r)::text AS payload FROM research_entries r ORDER BY created_at DESC LIMIT 100")
+        .fetch_all(&s.pool).await.map_err(server_error)?;
+    Ok(Json(serde_json::Value::Array(rows.iter().map(|r| {
+        serde_json::from_str::<serde_json::Value>(&r.get::<String, _>("payload")).expect("database emits valid JSON")
+    }).collect())))
+}
+async fn experiments_get(State(s): State<AppState>, h: HeaderMap) -> ApiResult {
+    authorized(&h, &s)?;
+    let rows = sqlx::query("SELECT row_to_json(e)::text AS payload FROM experiments e ORDER BY created_at DESC LIMIT 100")
+        .fetch_all(&s.pool).await.map_err(server_error)?;
+    Ok(Json(serde_json::Value::Array(rows.iter().map(|r| {
+        serde_json::from_str::<serde_json::Value>(&r.get::<String, _>("payload")).expect("database emits valid JSON")
+    }).collect())))
+}
+async fn artifacts_get(State(s): State<AppState>, h: HeaderMap) -> ApiResult {
+    authorized(&h, &s)?;
+    let rows = sqlx::query("SELECT row_to_json(a)::text AS payload FROM artifacts a ORDER BY created_at DESC LIMIT 100")
+        .fetch_all(&s.pool).await.map_err(server_error)?;
+    Ok(Json(serde_json::Value::Array(rows.iter().map(|r| {
+        serde_json::from_str::<serde_json::Value>(&r.get::<String, _>("payload")).expect("database emits valid JSON")
+    }).collect())))
+}
+async fn experiment_status(
+    State(s): State<AppState>, h: HeaderMap, Path(id): Path<Uuid>,
+    Json(v): Json<StatusInput>
+) -> ApiResult {
+    authorized(&h, &s)?;
+    if !matches!(v.status.as_str(), "proposed" | "in_progress" | "blocked") {
+        return Err(fail(StatusCode::BAD_REQUEST, "invalid_experiment_status"));
+    }
+    let row = sqlx::query("UPDATE experiments SET status = $1 WHERE id = $2 RETURNING id")
+        .bind(&v.status).bind(id).fetch_optional(&s.pool).await.map_err(server_error)?;
+    if row.is_none() { return Err(fail(StatusCode::NOT_FOUND, "unknown_experiment")); }
+    Ok(Json(serde_json::json!({"id":id,"status":v.status})))
+}
+
 async fn overview(State(s): State<AppState>, h: HeaderMap) -> ApiResult {
     authorized(&h, &s)?;
     let devices: i64 = sqlx::query_scalar("SELECT count(*) FROM devices")
@@ -263,9 +304,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(home))
         .route("/health", get(health))
         .route("/api/v1/devices", get(devices_get).post(devices_post))
-        .route("/api/v1/research", post(research_post))
-        .route("/api/v1/experiments", post(experiments_post))
-        .route("/api/v1/artifacts", post(artifacts_post))
+        .route("/api/v1/research", get(research_get).post(research_post))
+        .route("/api/v1/experiments", get(experiments_get).post(experiments_post))
+        .route("/api/v1/experiments/{id}/status", axum::routing::patch(experiment_status))
+        .route("/api/v1/artifacts", get(artifacts_get).post(artifacts_post))
         .route("/api/v1/overview", get(overview))
         .route("/api/v1/export", get(export))
         .with_state(state);
