@@ -1,7 +1,7 @@
 # v0.1.0 — initial vertical slice (release candidate)
 
 ## Implemented
-Rust/Axum server, PostgreSQL migrations, owner-token-gated JSON API, dark responsive single-page UI, device profiles, research creation, experiment proposals, artefact metadata, dashboard counts, JSON metadata export, container packaging and CI definition.
+Rust/Axum server, PostgreSQL migrations, owner-token-gated JSON API, dark responsive single-page UI, device profiles, research creation/listing, experiment proposals/listing/status updates, artefact metadata creation/listing, dashboard counts, JSON metadata export, container packaging and CI definition.
 
 ## Run locally
 1. Install Rust, Cargo and PostgreSQL. Create an empty gmsl database.
@@ -12,8 +12,8 @@ Rust/Axum server, PostgreSQL migrations, owner-token-gated JSON API, dark respon
 ## Safety and constraints
 - Token auth is a temporary single-owner bootstrap, NOT the PDD's preferred GitHub OAuth. Share neither the token nor screenshots containing it.
 - No public registration, device commands, flashing, firmware storage, or actual checksum verification.
-- Experiment workflow currently creates proposals; later status transitions and measurement records remain pending.
-- Research/experiment/artifact listing exists in machine-readable export, not separate UI lists.
+- Experiment workflow supports proposed/in-progress/blocked; claiming a verified result is deliberately blocked until supporting evidence can be recorded. Structured runs and measurement records remain pending.
+- Research, experiment and artefact listings appear in the UI; collections are currently bounded to the latest 100 entries without pagination.
 - No data import or automated restore. Do not treat this as the only source of important research.
 - The metadata export includes operational text and potentially sensitive entries; safeguard it.
 - Render free PostgreSQL expires after 30 days and provides no managed backup; exporting is mandatory.
@@ -23,7 +23,7 @@ Rust/Axum server, PostgreSQL migrations, owner-token-gated JSON API, dark respon
 
 ## Next development units
 1. Fix all compiler, lint, security and database integration findings observed in CI.
-2. Add PostgreSQL integration tests for protected CRUD and export.
+2. Expand PostgreSQL integration tests for invalid inputs, foreign keys, experiment state transitions and export.
 3. Implement GitHub OAuth owner allowlist, HttpOnly sessions, CSRF controls and audit events.
 4. Implement record editing/listing and experiment status transitions.
 5. Add versioned OpenAPI specification, rate limiting, CSP and deployment smoke automation.
