@@ -284,8 +284,8 @@ mod tests {
         assert!(!valid("  ", 5));
         assert!(!valid("abcdef", 5));
     }
-    #[test]
-    fn rejects_missing_owner_token() {
+    #[tokio::test]
+    async fn rejects_missing_owner_token() {
         let s = AppState {
             pool: PgPool::connect_lazy("postgres://x:y@localhost/db").unwrap(),
             token: Arc::from("a".repeat(32)),
