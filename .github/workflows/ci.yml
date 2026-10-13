@@ -28,17 +28,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - name: Bootstrap dependency lockfile output
-        run: |
-          cargo generate-lockfile
-          echo GMSL_LOCK_BEGIN
-          base64 -w0 Cargo.lock
-          echo
-          echo GMSL_LOCK_END
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
-      - run: cargo build --release
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: cargo build --locked --release
       - name: Database-backed end-to-end smoke test
         shell: bash
         run: |
