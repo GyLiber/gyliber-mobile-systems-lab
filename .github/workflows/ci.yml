@@ -50,9 +50,15 @@ jobs:
           test -n "$DEVICE"
           curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" -H "Content-Type: application/json" \
             -d "{\"device_id\":\"$DEVICE\",\"title\":\"Observation\",\"body\":\"Synthetic only\"}" http://localhost:3030/api/v1/research | jq -e '.id != null'
-          curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" -H "Content-Type: application/json" \
-            -d "{\"device_id\":\"$DEVICE\",\"title\":\"Probe\",\"hypothesis\":\"No mutation\"}" http://localhost:3030/api/v1/experiments | jq -e '.status=="proposed"'
+          EXPERIMENT=$(curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"device_id\":\"$DEVICE\",\"title\":\"Probe\",\"hypothesis\":\"No mutation\"}" http://localhost:3030/api/v1/experiments | jq -r .id)
+          test -n "$EXPERIMENT"
+          curl --fail --silent -X PATCH -H "Authorization: Bearer $LAB_OWNER_TOKEN" -H "Content-Type: application/json" -d '{"status":"blocked"}' \
+            "http://localhost:3030/api/v1/experiments/$EXPERIMENT/status" | jq -e '.status=="blocked"'
           curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" -H "Content-Type: application/json" \
             -d "{\"device_id\":\"$DEVICE\",\"name\":\"Test file\",\"sha256\":\"$(printf 'a%.0s' {1..64})\",\"provenance\":\"Synthetic fixture\"}" http://localhost:3030/api/v1/artifacts | jq -e '.id != null'
           curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" http://localhost:3030/api/v1/overview | jq -e '.devices==1 and .research==1 and .experiments==1 and .artifacts==1'
+          curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" http://localhost:3030/api/v1/research | jq -e 'length==1'
+          curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" http://localhost:3030/api/v1/experiments | jq -e 'length==1 and .[0].status=="blocked"'
+          curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" http://localhost:3030/api/v1/artifacts | jq -e 'length==1'
           curl --fail --silent -H "Authorization: Bearer $LAB_OWNER_TOKEN" http://localhost:3030/api/v1/export | jq -e '.schema_version==1 and (.devices|length)==1 and (.artifacts|length)==1'
