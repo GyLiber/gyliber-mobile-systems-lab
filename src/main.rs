@@ -55,7 +55,7 @@ fn authorized(h: &HeaderMap, s: &AppState) -> Result<(), (StatusCode, Json<ApiEr
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    let expected = format!("***", s.token);
+    let expected = format!("Bearer {}", s.token);
     if candidate.len() == expected.len()
         && bool::from(candidate.as_bytes().ct_eq(expected.as_bytes()))
     {
