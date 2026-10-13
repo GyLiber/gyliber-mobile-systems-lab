@@ -6,7 +6,7 @@ A focused, evidence-driven laboratory for studying and improving a legacy Androi
 
 Development version **0.1.0 release candidate**, not yet a validated hosted release.
 
-The Rust/Axum + PostgreSQL application supports device profiles, research entries, experiment proposals, SHA-256 artefact metadata, authenticated overview and JSON export. It does **not** flash devices or run shell commands.
+The Rust/Axum + PostgreSQL application supports device profiles, research entries, experiment proposals and status tracking, SHA-256 artefact metadata, authenticated overview and JSON export. It does **not** flash devices or run shell commands.
 
 ## Getting started
 
@@ -18,7 +18,7 @@ Requires Rust/Cargo and PostgreSQL. Create an empty `gmsl` database and provide:
 
 Run `cargo test && cargo run`, then open http://localhost:3000. The token stays in the page's volatile memory, not localStorage. See [release candidate notes](docs/RELEASE-0.1.0.md) for limitations, tests and release gate.
 
-The API is under `/api/v1`: `GET /devices`, `POST /devices`, `POST /research`, `POST /experiments`, `POST /artifacts`, `GET /overview`, `GET /export`. Protected calls require `Authorization: Bearer <LAB_OWNER_TOKEN>`. `GET /health` is public.
+The API is under `/api/v1`: `GET/POST /devices`, `GET/POST /research`, `GET/POST /experiments`, `PATCH /experiments/{id}/status`, `GET/POST /artifacts`, `GET /overview`, `GET /export`. Collections return the most recent 100 entries; full metadata export is separate. Protected calls require `Authorization: Bearer <LAB_OWNER_TOKEN>`. `GET /health` is public.
 
 ## Security and durability
 
