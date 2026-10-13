@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gyliber-mobile-systems-lab
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: LAB_OWNER_TOKEN
+        sync: false
