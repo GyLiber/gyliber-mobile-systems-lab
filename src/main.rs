@@ -1,4 +1,4 @@
-use axum::{extract::State, http::{HeaderMap, StatusCode}, response::{Html, IntoResponse}, routing::{get, post}, Json, Router};
+use axum::{extract::State, http::{HeaderMap, StatusCode}, response::Html, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
 use std::{env, sync::Arc};
